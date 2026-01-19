@@ -20,7 +20,6 @@ export default function HomePage() {
     createNewFamily,
     addMember,
     selectMember,
-    loadMembers,
     clearError,
   } = useFamily()
 
@@ -32,14 +31,12 @@ export default function HomePage() {
   const [newFamilyName, setNewFamilyName] = useState('')
   const [newFamilyPin, setNewFamilyPin] = useState('')
 
-  // セッションがあればチャットへ
   useEffect(() => {
     if (session) {
       router.push('/chat')
     }
   }, [session, router])
 
-  // PIN入力時
   const handlePinSubmit = async (pin: string) => {
     const id = await joinWithPin(pin)
     if (id) {
@@ -48,12 +45,10 @@ export default function HomePage() {
     }
   }
 
-  // メンバー選択時
   const handleSelectMember = (member: Member) => {
     selectMember(member)
   }
 
-  // メンバー追加完了
   const handleAddMember = async () => {
     if (!familyId || !newMemberName.trim()) return
     const member = await addMember(familyId, newMemberName, newMemberEmoji, newMemberRole)
@@ -64,7 +59,6 @@ export default function HomePage() {
     }
   }
 
-  // 家族作成完了
   const handleCreateFamily = async () => {
     if (!newFamilyName.trim() || newFamilyPin.length !== 6) return
     const id = await createNewFamily(newFamilyName, newFamilyPin)
@@ -76,45 +70,41 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl text-gray-500">よみこみちゅう...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-lg text-slate-400">読み込み中...</div>
       </div>
     )
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      <div className="w-full max-w-sm">
         {/* ヘッダー */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-primary mb-2">
-            🏠 ファミリーチャット
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+            Family Chat
           </h1>
-          <p className="text-xl text-gray-600">かぞくでおはなし</p>
+          <p className="text-slate-400 text-sm">家族のためのチャット</p>
         </div>
 
         {/* エラー表示 */}
         {error && (
-          <div className="mb-6 p-4 bg-red-100 text-red-600 rounded-2xl text-center text-lg">
+          <div className="mb-6 p-3 bg-red-50 text-red-500 rounded-xl text-center text-sm border border-red-100">
             {error}
-            <button onClick={clearError} className="ml-2 underline">
-              とじる
-            </button>
+            <button onClick={clearError} className="ml-2 underline">閉じる</button>
           </div>
         )}
 
         {/* PIN入力画面 */}
         {screen === 'pin' && (
           <div className="flex flex-col items-center gap-6">
-            <h2 className="text-2xl font-bold text-gray-700">
-              PINコードをいれてね
-            </h2>
+            <p className="text-slate-500">PINコードを入力</p>
             <PinInput onSubmit={handlePinSubmit} />
             <button
               onClick={() => setScreen('create-family')}
-              className="mt-4 text-lg text-primary underline"
+              className="text-sm text-primary hover:underline"
             >
-              あたらしいかぞくをつくる
+              新しい家族を作成
             </button>
           </div>
         )}
@@ -130,24 +120,21 @@ export default function HomePage() {
 
         {/* メンバー追加画面 */}
         {screen === 'add-member' && (
-          <div className="flex flex-col items-center gap-6 bg-white p-6 rounded-3xl shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-700">
-              メンバーをついか
-            </h2>
+          <div className="flex flex-col gap-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-700 text-center">メンバーを追加</h2>
 
-            {/* 絵文字選択 */}
             <div className="text-center">
-              <p className="text-lg text-gray-600 mb-2">アイコンをえらぶ</p>
+              <p className="text-sm text-slate-400 mb-3">アイコン</p>
               <div className="grid grid-cols-6 gap-2">
                 {['😊', '😎', '🥰', '🤗', '👨', '👩', '👦', '👧', '🧒', '👶', '🐶', '🐱'].map(
                   (emoji) => (
                     <button
                       key={emoji}
                       onClick={() => setNewMemberEmoji(emoji)}
-                      className={`text-3xl p-2 rounded-xl ${
+                      className={`text-2xl p-2 rounded-lg transition-colors ${
                         newMemberEmoji === emoji
-                          ? 'bg-primary/20 ring-2 ring-primary'
-                          : 'hover:bg-gray-100'
+                          ? 'bg-primary/10 ring-2 ring-primary'
+                          : 'hover:bg-slate-100'
                       }`}
                     >
                       {emoji}
@@ -157,34 +144,31 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* 名前入力 */}
             <input
               type="text"
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
-              placeholder="なまえ"
-              className="w-full text-2xl text-center py-4 px-6 border-2 border-gray-200 rounded-2xl
-                         focus:border-primary focus:outline-none"
+              placeholder="名前"
+              className="text-center text-lg py-3 px-4 border border-slate-200 rounded-xl focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
 
-            {/* 役割選択 */}
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={() => setNewMemberRole('child')}
-                className={`px-6 py-3 rounded-2xl text-xl font-bold ${
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${
                   newMemberRole === 'child'
                     ? 'bg-secondary text-white'
-                    : 'bg-gray-100 text-gray-600'
+                    : 'bg-slate-100 text-slate-500'
                 }`}
               >
                 こども
               </button>
               <button
                 onClick={() => setNewMemberRole('parent')}
-                className={`px-6 py-3 rounded-2xl text-xl font-bold ${
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${
                   newMemberRole === 'parent'
                     ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-600'
+                    : 'bg-slate-100 text-slate-500'
                 }`}
               >
                 おとな
@@ -194,17 +178,17 @@ export default function HomePage() {
             <button
               onClick={handleAddMember}
               disabled={!newMemberName.trim()}
-              className="btn-primary w-full disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-medium disabled:opacity-40"
             >
-              ついか
+              追加
             </button>
 
             {familyId && members.length > 0 && (
               <button
                 onClick={() => setScreen('select-member')}
-                className="text-lg text-gray-500 underline"
+                className="text-sm text-slate-400 hover:text-slate-600"
               >
-                もどる
+                戻る
               </button>
             )}
           </div>
@@ -212,24 +196,19 @@ export default function HomePage() {
 
         {/* 家族作成画面 */}
         {screen === 'create-family' && (
-          <div className="flex flex-col items-center gap-6 bg-white p-6 rounded-3xl shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-700">
-              あたらしいかぞく
-            </h2>
+          <div className="flex flex-col gap-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-700 text-center">新しい家族</h2>
 
             <input
               type="text"
               value={newFamilyName}
               onChange={(e) => setNewFamilyName(e.target.value)}
-              placeholder="かぞくのなまえ"
-              className="w-full text-2xl text-center py-4 px-6 border-2 border-gray-200 rounded-2xl
-                         focus:border-primary focus:outline-none"
+              placeholder="家族の名前"
+              className="text-center text-lg py-3 px-4 border border-slate-200 rounded-xl focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
 
-            <div className="w-full">
-              <p className="text-lg text-gray-600 mb-2 text-center">
-                6けたのPINコード
-              </p>
+            <div>
+              <p className="text-sm text-slate-400 mb-2 text-center">6桁のPINコード</p>
               <input
                 type="text"
                 value={newFamilyPin}
@@ -239,24 +218,23 @@ export default function HomePage() {
                 }}
                 placeholder="000000"
                 maxLength={6}
-                className="w-full text-3xl text-center py-4 px-6 border-2 border-gray-200 rounded-2xl
-                           focus:border-primary focus:outline-none tracking-widest"
+                className="w-full text-2xl text-center py-3 px-4 border border-slate-200 rounded-xl tracking-[0.5em] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <button
               onClick={handleCreateFamily}
               disabled={!newFamilyName.trim() || newFamilyPin.length !== 6}
-              className="btn-primary w-full disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-medium disabled:opacity-40"
             >
-              つくる
+              作成
             </button>
 
             <button
               onClick={() => setScreen('pin')}
-              className="text-lg text-gray-500 underline"
+              className="text-sm text-slate-400 hover:text-slate-600"
             >
-              もどる
+              戻る
             </button>
           </div>
         )}

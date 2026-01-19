@@ -14,38 +14,38 @@ export default function MemberSelector({
   onAddMember,
 }: MemberSelectorProps) {
   return (
-    <div className="flex flex-col items-center gap-6">
-      <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
-        だれですか？
+    <div className="flex flex-col items-center gap-5">
+      <h2 className="text-lg font-semibold text-slate-600">
+        あなたは誰？
       </h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-3 w-full">
         {members.map((member) => (
           <button
             key={member.id}
             onClick={() => onSelect(member)}
-            className="flex flex-col items-center gap-2 p-6 bg-white rounded-3xl
-                       shadow-lg hover:shadow-xl active:scale-95 transition-all duration-150"
+            className="flex flex-col items-center gap-2 p-5 bg-white rounded-2xl
+                       border border-slate-100 shadow-sm
+                       hover:shadow-md hover:border-primary/30 active:scale-[0.98] transition-all"
           >
-            <span className="text-6xl">{member.avatar_emoji}</span>
-            <span className="text-xl md:text-2xl font-bold text-gray-700">
+            <span className="text-4xl">{member.avatar_emoji}</span>
+            <span className="text-base font-medium text-slate-700">
               {member.name}
             </span>
-            <span className="text-sm text-gray-400">
+            <span className="text-xs text-slate-400">
               {member.role === 'parent' ? 'おとな' : 'こども'}
             </span>
           </button>
         ))}
 
-        {/* メンバー追加ボタン */}
         <button
           onClick={onAddMember}
-          className="flex flex-col items-center justify-center gap-2 p-6 bg-gray-100
-                     rounded-3xl border-4 border-dashed border-gray-300
-                     hover:bg-gray-200 active:scale-95 transition-all duration-150"
+          className="flex flex-col items-center justify-center gap-2 p-5
+                     bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200
+                     hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
         >
-          <span className="text-5xl text-gray-400">➕</span>
-          <span className="text-lg font-bold text-gray-500">ついか</span>
+          <span className="text-3xl text-slate-300">＋</span>
+          <span className="text-sm font-medium text-slate-400">追加</span>
         </button>
       </div>
     </div>

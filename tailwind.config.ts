@@ -9,8 +9,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: '#4F46E5',
-        secondary: '#10B981',
+        primary: '#6366F1',    // インディゴ
+        secondary: '#8B5CF6',  // パープル
+        accent: '#EC4899',     // ピンク
+        muted: '#94A3B8',      // スレートグレー
+        surface: '#F8FAFC',    // 明るい背景
       },
     },
   },

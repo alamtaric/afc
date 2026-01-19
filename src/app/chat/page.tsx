@@ -32,36 +32,36 @@ export default function ChatPage() {
 
   if (familyLoading || !session) {
     return (
-      <div className="h-dvh flex items-center justify-center">
-        <div className="text-xl text-gray-500">よみこみちゅう...</div>
+      <div className="h-dvh flex items-center justify-center bg-slate-50">
+        <div className="text-lg text-slate-400">読み込み中...</div>
       </div>
     )
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-gray-50">
+    <div className="h-dvh flex flex-col bg-gradient-to-b from-slate-50 to-slate-100">
       {/* ヘッダー */}
-      <header className="bg-white border-b px-3 py-2 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
           <span className="text-2xl">{session.memberEmoji}</span>
-          <span className="font-bold text-gray-800">{session.memberName}</span>
+          <span className="font-semibold text-slate-700">{session.memberName}</span>
         </div>
         <button
           onClick={() => { logout(); router.push('/') }}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
         >
           ログアウト
         </button>
       </header>
 
       {/* メッセージ一覧 */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messagesLoading ? (
-          <div className="text-center text-gray-500 py-8">読み込み中...</div>
+          <div className="text-center text-slate-400 py-8">読み込み中...</div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-5xl mb-3">💬</div>
-            <p className="text-gray-500">メッセージを送ろう！</p>
+          <div className="text-center py-16">
+            <div className="text-5xl mb-4 opacity-80">💬</div>
+            <p className="text-slate-400">メッセージを送ろう</p>
           </div>
         ) : (
           messages.map((message) => (

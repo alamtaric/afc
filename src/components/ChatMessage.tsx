@@ -16,44 +16,43 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
   })
 
   return (
-    <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* アバター */}
       <div className="flex-shrink-0">
-        <div className="w-12 h-12 md:w-14 md:h-14 bg-gray-100 rounded-full flex items-center justify-center text-2xl md:text-3xl">
+        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-lg shadow-sm border border-slate-100">
           {sender?.avatar_emoji || '👤'}
         </div>
       </div>
 
       {/* メッセージ本文 */}
-      <div className={`flex flex-col gap-1 max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
-        <span className="text-sm text-gray-500 px-2">
-          {sender?.name || 'だれか'}
+      <div className={`flex flex-col gap-1 max-w-[75%] ${isOwn ? 'items-end' : 'items-start'}`}>
+        <span className="text-xs text-slate-400 px-1">
+          {sender?.name || ''}
         </span>
 
         <div
-          className={`rounded-3xl px-5 py-3 text-xl md:text-2xl
+          className={`rounded-2xl px-4 py-2 text-[15px] leading-relaxed shadow-sm
             ${isOwn
-              ? 'bg-primary text-white rounded-tr-lg'
-              : 'bg-white text-gray-800 rounded-tl-lg shadow-md'
+              ? 'bg-gradient-to-br from-primary to-secondary text-white rounded-tr-sm'
+              : 'bg-white text-slate-700 rounded-tl-sm border border-slate-100'
             }`}
         >
           {message.content}
         </div>
 
-        {/* 画像があれば表示 */}
         {message.image_url && (
-          <div className="mt-2 rounded-2xl overflow-hidden shadow-md">
+          <div className="mt-1 rounded-xl overflow-hidden shadow-sm">
             <Image
               src={message.image_url}
-              alt="送信画像"
-              width={300}
-              height={300}
+              alt=""
+              width={240}
+              height={240}
               className="object-cover"
             />
           </div>
         )}
 
-        <span className="text-xs text-gray-400 px-2">{time}</span>
+        <span className="text-[10px] text-slate-300 px-1">{time}</span>
       </div>
     </div>
   )
