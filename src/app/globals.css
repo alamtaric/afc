@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground: #171717;
+  --background: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground: #ededed;
+    --background: #0a0a0a;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 子供向けの大きなタッチターゲット */
+.touch-target {
+  @apply min-h-16 min-w-16 flex items-center justify-center;
+}
+
+/* 大きなテキスト */
+.text-child {
+  @apply text-xl md:text-2xl;
+}
+
+/* カラフルなボタン */
+.btn-primary {
+  @apply bg-primary text-white font-bold py-4 px-8 rounded-2xl text-xl
+         hover:opacity-90 active:scale-95 transition-all duration-150
+         touch-target;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-white font-bold py-4 px-8 rounded-2xl text-xl
+         hover:opacity-90 active:scale-95 transition-all duration-150
+         touch-target;
+}
+
+.btn-emoji {
+  @apply text-4xl p-3 rounded-xl hover:bg-gray-100 active:bg-gray-200
+         transition-all duration-150 touch-target;
+}
