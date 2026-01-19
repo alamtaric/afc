@@ -1,7 +1,8 @@
+const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
-// SVGアイコンを生成
+// アイコンのSVGを生成
 function generateSvgIcon(size) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <defs>
@@ -11,25 +12,31 @@ function generateSvgIcon(size) {
     </linearGradient>
   </defs>
   <rect width="${size}" height="${size}" rx="${size * 0.2}" fill="url(#bg)"/>
-  <text x="50%" y="55%" font-size="${size * 0.5}" text-anchor="middle" dominant-baseline="middle">🏠</text>
+  <text x="50%" y="58%" font-size="${size * 0.5}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif">🏠</text>
 </svg>`;
 }
 
-// iconsディレクトリを作成
-const iconsDir = path.join(__dirname, '..', 'public', 'icons');
-if (!fs.existsSync(iconsDir)) {
-  fs.mkdirSync(iconsDir, { recursive: true });
+async function generateIcons() {
+  // iconsディレクトリを作成
+  const iconsDir = path.join(__dirname, '..', 'public', 'icons');
+  if (!fs.existsSync(iconsDir)) {
+    fs.mkdirSync(iconsDir, { recursive: true });
+  }
+
+  const sizes = [192, 512];
+
+  for (const size of sizes) {
+    const svg = generateSvgIcon(size);
+    const pngPath = path.join(iconsDir, `icon-${size}.png`);
+
+    await sharp(Buffer.from(svg))
+      .png()
+      .toFile(pngPath);
+
+    console.log(`Created: icon-${size}.png`);
+  }
+
+  console.log('\\nPNGアイコンの生成が完了しました！');
 }
 
-// SVGアイコンを保存
-const sizes = [192, 512];
-sizes.forEach(size => {
-  const svg = generateSvgIcon(size);
-  const filePath = path.join(iconsDir, `icon-${size}.svg`);
-  fs.writeFileSync(filePath, svg);
-  console.log(`Created: ${filePath}`);
-});
-
-console.log('\\nSVGアイコンを作成しました。');
-console.log('PNGが必要な場合は、以下のオンラインツールで変換できます:');
-console.log('https://svgtopng.com/');
+generateIcons().catch(console.error);

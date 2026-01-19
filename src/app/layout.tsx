@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50">
         {children}
