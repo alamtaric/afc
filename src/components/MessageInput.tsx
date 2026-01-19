@@ -6,15 +6,16 @@ import ImageUpload from './ImageUpload'
 
 interface MessageInputProps {
   onSend: (content: string, imageUrl?: string) => void
+  familyId: string
   disabled?: boolean
 }
 
-export default function MessageInput({ onSend, disabled }: MessageInputProps) {
+export default function MessageInput({ onSend, familyId, disabled }: MessageInputProps) {
   const [message, setMessage] = useState('')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showImageUpload, setShowImageUpload] = useState(false)
   const [pendingImage, setPendingImage] = useState<string | null>(null)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleSend = () => {
     if (message.trim() || pendingImage) {
@@ -26,81 +27,68 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
 
   const handleEmojiSelect = (emoji: string) => {
     setMessage((prev) => prev + emoji)
+    setShowEmojiPicker(false)
     inputRef.current?.focus()
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
   }
 
   return (
     <>
-      <div className="bg-white border-t-2 border-gray-100 p-4">
+      <div className="bg-white border-t border-gray-200 p-2 safe-area-bottom">
         {/* 画像プレビュー */}
         {pendingImage && (
-          <div className="mb-3 relative inline-block">
-            <img
-              src={pendingImage}
-              alt="送信する画像"
-              className="h-20 rounded-lg"
-            />
+          <div className="mb-2 relative inline-block">
+            <img src={pendingImage} alt="" className="h-16 rounded-lg" />
             <button
               onClick={() => setPendingImage(null)}
-              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-sm"
+              className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs"
             >
               ✕
             </button>
           </div>
         )}
 
-        <div className="flex items-end gap-3">
-          {/* 画像ボタン */}
+        <div className="flex items-center gap-2">
+          {/* ツールボタン */}
           <button
             onClick={() => setShowImageUpload(true)}
-            className="btn-emoji flex-shrink-0"
+            className="p-2 text-2xl hover:bg-gray-100 rounded-full"
             disabled={disabled}
           >
             📷
           </button>
-
-          {/* 絵文字ボタン */}
           <button
             onClick={() => setShowEmojiPicker(true)}
-            className="btn-emoji flex-shrink-0"
+            className="p-2 text-2xl hover:bg-gray-100 rounded-full"
             disabled={disabled}
           >
             😊
           </button>
 
           {/* テキスト入力 */}
-          <textarea
+          <input
             ref={inputRef}
+            type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="メッセージをかく..."
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="メッセージ..."
             disabled={disabled}
-            rows={1}
-            className="flex-1 resize-none rounded-2xl border-2 border-gray-200 px-4 py-3
-                       text-xl focus:border-primary focus:outline-none
-                       disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-lg
+                       focus:border-primary focus:outline-none"
           />
 
           {/* 送信ボタン */}
           <button
             onClick={handleSend}
             disabled={disabled || (!message.trim() && !pendingImage)}
-            className="btn-primary flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 text-2xl bg-primary text-white rounded-full
+                       disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            おくる
+            ➤
           </button>
         </div>
       </div>
 
-      {/* 絵文字ピッカー */}
       {showEmojiPicker && (
         <EmojiPicker
           onSelect={handleEmojiSelect}
@@ -108,9 +96,9 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
         />
       )}
 
-      {/* 画像アップロード */}
       {showImageUpload && (
         <ImageUpload
+          familyId={familyId}
           onUpload={(url) => {
             setPendingImage(url)
             setShowImageUpload(false)

@@ -15,14 +15,12 @@ export default function ChatPage() {
   )
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // セッションがなければログインへ
   useEffect(() => {
     if (!familyLoading && !session) {
       router.push('/')
     }
   }, [session, familyLoading, router])
 
-  // 新しいメッセージが来たら自動スクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -32,55 +30,38 @@ export default function ChatPage() {
     await sendMessage(session.memberId, content, imageUrl)
   }
 
-  const handleLogout = () => {
-    logout()
-    router.push('/')
-  }
-
   if (familyLoading || !session) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl text-gray-500">よみこみちゅう...</div>
+      <div className="h-dvh flex items-center justify-center">
+        <div className="text-xl text-gray-500">よみこみちゅう...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-purple-50">
+    <div className="h-dvh flex flex-col bg-gray-50">
       {/* ヘッダー */}
-      <header className="bg-white shadow-md px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">{session.memberEmoji}</span>
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">
-              {session.memberName}
-            </h1>
-            <p className="text-sm text-gray-500">ファミリーチャット</p>
-          </div>
+      <header className="bg-white border-b px-3 py-2 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{session.memberEmoji}</span>
+          <span className="font-bold text-gray-800">{session.memberName}</span>
         </div>
         <button
-          onClick={handleLogout}
-          className="px-4 py-2 text-lg bg-gray-100 rounded-xl hover:bg-gray-200
-                     active:scale-95 transition-all"
+          onClick={() => { logout(); router.push('/') }}
+          className="text-sm text-gray-500 hover:text-gray-700"
         >
-          かえる
+          ログアウト
         </button>
       </header>
 
       {/* メッセージ一覧 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {messagesLoading ? (
-          <div className="text-center text-xl text-gray-500 py-8">
-            メッセージをよみこみちゅう...
-          </div>
+          <div className="text-center text-gray-500 py-8">読み込み中...</div>
         ) : messages.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">💬</div>
-            <p className="text-xl text-gray-500">
-              まだメッセージがないよ
-              <br />
-              さいしょのメッセージをおくろう！
-            </p>
+            <div className="text-5xl mb-3">💬</div>
+            <p className="text-gray-500">メッセージを送ろう！</p>
           </div>
         ) : (
           messages.map((message) => (
@@ -95,7 +76,10 @@ export default function ChatPage() {
       </div>
 
       {/* メッセージ入力 */}
-      <MessageInput onSend={handleSend} />
+      <MessageInput
+        onSend={handleSend}
+        familyId={session.familyId}
+      />
     </div>
   )
 }

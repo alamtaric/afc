@@ -6,7 +6,7 @@ import { uploadImage } from '@/lib/supabase'
 interface ImageUploadProps {
   onUpload: (url: string) => void
   onClose: () => void
-  familyId?: string
+  familyId: string
 }
 
 export default function ImageUpload({ onUpload, onClose, familyId }: ImageUploadProps) {
@@ -18,15 +18,13 @@ export default function ImageUpload({ onUpload, onClose, familyId }: ImageUpload
     const file = e.target.files?.[0]
     if (!file) return
 
-    // ファイルサイズチェック (5MB以下)
     if (file.size > 5 * 1024 * 1024) {
-      setError('ファイルが大きすぎます（5MB以下）')
+      setError('5MB以下の画像を選んでね')
       return
     }
 
-    // 画像タイプチェック
     if (!file.type.startsWith('image/')) {
-      setError('画像ファイルを選んでください')
+      setError('画像ファイルを選んでね')
       return
     }
 
@@ -34,17 +32,8 @@ export default function ImageUpload({ onUpload, onClose, familyId }: ImageUpload
     setError(null)
 
     try {
-      // ローカルプレビュー用のURLを作成（Supabaseなしでも動作）
-      const localUrl = URL.createObjectURL(file)
-
-      // Supabaseが設定されていれば実際にアップロード
-      if (familyId && process.env.NEXT_PUBLIC_SUPABASE_URL) {
-        const url = await uploadImage(file, familyId)
-        onUpload(url)
-      } else {
-        // 開発用：ローカルURLを使用
-        onUpload(localUrl)
-      }
+      const url = await uploadImage(file, familyId)
+      onUpload(url)
     } catch {
       setError('アップロードに失敗しました')
     } finally {
@@ -54,52 +43,41 @@ export default function ImageUpload({ onUpload, onClose, familyId }: ImageUpload
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl p-6 max-w-sm w-full">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">しゃしんをえらぶ</h3>
-          <button
-            onClick={onClose}
-            className="text-3xl p-2 hover:bg-gray-100 rounded-full"
-          >
-            ✕
-          </button>
+      <div className="bg-white rounded-2xl p-5 max-w-xs w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">写真を送る</h3>
+          <button onClick={onClose} className="text-2xl text-gray-400">✕</button>
         </div>
 
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           onChange={handleFileSelect}
           className="hidden"
         />
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-600 rounded-xl text-center">
+          <div className="mb-3 p-2 bg-red-100 text-red-600 rounded-lg text-sm text-center">
             {error}
           </div>
         )}
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="btn-primary w-full"
+            className="w-full py-3 bg-primary text-white rounded-xl font-bold
+                       disabled:opacity-50"
           >
-            {isUploading ? 'アップロードちゅう...' : '📁 ファイルをえらぶ'}
+            {isUploading ? '送信中...' : '📷 写真を選ぶ'}
           </button>
-
-          {/* カメラ入力（モバイル用） */}
           <button
-            onClick={() => {
-              if (fileInputRef.current) {
-                fileInputRef.current.capture = 'environment'
-                fileInputRef.current.click()
-              }
-            }}
-            disabled={isUploading}
-            className="btn-secondary w-full"
+            onClick={onClose}
+            className="w-full py-2 text-gray-500"
           >
-            📸 カメラでとる
+            キャンセル
           </button>
         </div>
       </div>

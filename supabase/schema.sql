@@ -40,27 +40,13 @@ ALTER TABLE families ENABLE ROW LEVEL SECURITY;
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- RLSポリシー（匿名アクセス許可 - 家族内でPINコードで認証）
--- 注意: 本番環境ではより厳格なポリシーを検討してください
-
--- families: 全員が読み取り可能、作成可能
+-- RLSポリシー
 CREATE POLICY "families_select" ON families FOR SELECT USING (true);
 CREATE POLICY "families_insert" ON families FOR INSERT WITH CHECK (true);
-
--- members: 全員が読み取り可能、作成可能
 CREATE POLICY "members_select" ON members FOR SELECT USING (true);
 CREATE POLICY "members_insert" ON members FOR INSERT WITH CHECK (true);
-
--- messages: 全員が読み取り可能、作成可能
 CREATE POLICY "messages_select" ON messages FOR SELECT USING (true);
 CREATE POLICY "messages_insert" ON messages FOR INSERT WITH CHECK (true);
 
 -- Realtime を有効化
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
-
--- Storage バケット作成（Supabaseダッシュボードから手動で作成するか、以下を実行）
--- INSERT INTO storage.buckets (id, name, public) VALUES ('chat-images', 'chat-images', true);
-
--- Storage ポリシー
--- CREATE POLICY "chat_images_select" ON storage.objects FOR SELECT USING (bucket_id = 'chat-images');
--- CREATE POLICY "chat_images_insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'chat-images');

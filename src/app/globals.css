@@ -7,43 +7,41 @@
   --background: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground: #ededed;
-    --background: #0a0a0a;
-  }
+html, body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* 子供向けの大きなタッチターゲット */
-.touch-target {
-  @apply min-h-16 min-w-16 flex items-center justify-center;
+/* iOS Safe Area対応 */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-/* 大きなテキスト */
-.text-child {
-  @apply text-xl md:text-2xl;
+/* h-dvh fallback */
+.h-dvh {
+  height: 100dvh;
+  height: 100vh; /* fallback */
 }
 
-/* カラフルなボタン */
+@supports (height: 100dvh) {
+  .h-dvh {
+    height: 100dvh;
+  }
+}
+
+/* ボタンスタイル */
 .btn-primary {
-  @apply bg-primary text-white font-bold py-4 px-8 rounded-2xl text-xl
-         hover:opacity-90 active:scale-95 transition-all duration-150
-         touch-target;
+  @apply bg-primary text-white font-bold py-3 px-6 rounded-2xl text-lg
+         hover:opacity-90 active:scale-95 transition-all duration-150;
 }
 
 .btn-secondary {
-  @apply bg-secondary text-white font-bold py-4 px-8 rounded-2xl text-xl
-         hover:opacity-90 active:scale-95 transition-all duration-150
-         touch-target;
-}
-
-.btn-emoji {
-  @apply text-4xl p-3 rounded-xl hover:bg-gray-100 active:bg-gray-200
-         transition-all duration-150 touch-target;
+  @apply bg-secondary text-white font-bold py-3 px-6 rounded-2xl text-lg
+         hover:opacity-90 active:scale-95 transition-all duration-150;
 }
