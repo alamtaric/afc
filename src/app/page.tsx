@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import PinInput from '@/components/PinInput'
+import AnimalCodeInput from '@/components/AnimalCodeInput'
 import MemberSelector from '@/components/MemberSelector'
 import { useFamily } from '@/hooks/useFamily'
 import { Member } from '@/lib/types'
 
-type Screen = 'pin' | 'select-member' | 'add-member' | 'create-family'
+type Screen = 'pin' | 'animal' | 'select-member' | 'add-member' | 'create-family'
 
 export default function HomePage() {
   const router = useRouter()
@@ -25,11 +26,13 @@ export default function HomePage() {
 
   const [screen, setScreen] = useState<Screen>('pin')
   const [familyId, setFamilyId] = useState<string | null>(null)
+  const [enteredPin, setEnteredPin] = useState('')
   const [newMemberName, setNewMemberName] = useState('')
   const [newMemberEmoji, setNewMemberEmoji] = useState('😊')
   const [newMemberRole, setNewMemberRole] = useState<'parent' | 'child'>('child')
   const [newFamilyName, setNewFamilyName] = useState('')
   const [newFamilyPin, setNewFamilyPin] = useState('')
+  const [newFamilyAnimalCode, setNewFamilyAnimalCode] = useState<string[]>([])
 
   useEffect(() => {
     if (session) {
@@ -37,11 +40,20 @@ export default function HomePage() {
     }
   }, [session, router])
 
-  const handlePinSubmit = async (pin: string) => {
-    const id = await joinWithPin(pin)
+  const handlePinSubmit = (pin: string) => {
+    setEnteredPin(pin)
+    setScreen('animal')
+  }
+
+  const handleAnimalSubmit = async (animalCode: string) => {
+    const id = await joinWithPin(enteredPin, animalCode)
     if (id) {
       setFamilyId(id)
       setScreen('select-member')
+    } else {
+      // 失敗したらPIN入力からやり直し
+      setEnteredPin('')
+      setScreen('pin')
     }
   }
 
@@ -60,8 +72,8 @@ export default function HomePage() {
   }
 
   const handleCreateFamily = async () => {
-    if (!newFamilyName.trim() || newFamilyPin.length !== 6) return
-    const id = await createNewFamily(newFamilyName, newFamilyPin)
+    if (!newFamilyName.trim() || newFamilyPin.length !== 6 || newFamilyAnimalCode.length !== 4) return
+    const id = await createNewFamily(newFamilyName, newFamilyPin, newFamilyAnimalCode.join(''))
     if (id) {
       setFamilyId(id)
       setScreen('add-member')
@@ -105,6 +117,23 @@ export default function HomePage() {
               className="text-sm text-primary hover:underline"
             >
               新しい家族を作成
+            </button>
+          </div>
+        )}
+
+        {/* アニマルコード入力画面 */}
+        {screen === 'animal' && (
+          <div className="flex flex-col items-center gap-6">
+            <p className="text-slate-500">アニマルコードを入力</p>
+            <AnimalCodeInput onSubmit={handleAnimalSubmit} />
+            <button
+              onClick={() => {
+                setEnteredPin('')
+                setScreen('pin')
+              }}
+              className="text-sm text-slate-400 hover:text-slate-600"
+            >
+              戻る
             </button>
           </div>
         )}
@@ -222,9 +251,47 @@ export default function HomePage() {
               />
             </div>
 
+            <div>
+              <p className="text-sm text-slate-400 mb-2 text-center">アニマルコード（4つ選択）</p>
+              <div className="flex justify-center gap-2 mb-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-2xl transition-colors
+                      ${newFamilyAnimalCode[i] ? 'border-primary bg-primary/5' : 'border-slate-200 bg-slate-50'}`}
+                  >
+                    {newFamilyAnimalCode[i] || ''}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-6 gap-2">
+                {['🐶', '🐱', '🐰', '🐻', '🦁', '🐼', '🐨', '🐯', '🦊', '🐸', '🐷', '🐮'].map((animal) => (
+                  <button
+                    key={animal}
+                    onClick={() => {
+                      if (newFamilyAnimalCode.length < 4) {
+                        setNewFamilyAnimalCode([...newFamilyAnimalCode, animal])
+                      }
+                    }}
+                    className="text-2xl p-2 rounded-lg hover:bg-slate-100 active:scale-95 transition-all"
+                  >
+                    {animal}
+                  </button>
+                ))}
+              </div>
+              {newFamilyAnimalCode.length > 0 && (
+                <button
+                  onClick={() => setNewFamilyAnimalCode(newFamilyAnimalCode.slice(0, -1))}
+                  className="mt-2 text-sm text-slate-400 hover:text-slate-600"
+                >
+                  1つ戻す
+                </button>
+              )}
+            </div>
+
             <button
               onClick={handleCreateFamily}
-              disabled={!newFamilyName.trim() || newFamilyPin.length !== 6}
+              disabled={!newFamilyName.trim() || newFamilyPin.length !== 6 || newFamilyAnimalCode.length !== 4}
               className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-medium disabled:opacity-40"
             >
               作成

@@ -38,16 +38,16 @@ export function useFamily() {
     }
   }, [])
 
-  // PINで家族に参加
-  const joinWithPin = useCallback(async (pin: string) => {
+  // PIN + アニマルコードで家族に参加
+  const joinWithPin = useCallback(async (pin: string, animalCode: string) => {
     setLoading(true)
     setError(null)
     try {
-      const family = await joinFamily(pin)
+      const family = await joinFamily(pin, animalCode)
       await loadMembers(family.id)
       return family.id
     } catch {
-      setError('PINコードがみつかりません')
+      setError('認証コードが正しくありません')
       return null
     } finally {
       setLoading(false)
@@ -55,11 +55,11 @@ export function useFamily() {
   }, [loadMembers])
 
   // 新しい家族を作成
-  const createNewFamily = useCallback(async (name: string, pin: string) => {
+  const createNewFamily = useCallback(async (name: string, pin: string, animalCode: string) => {
     setLoading(true)
     setError(null)
     try {
-      const family = await createFamily(name, pin)
+      const family = await createFamily(name, pin, animalCode)
       return family.id
     } catch {
       setError('家族の作成に失敗しました')

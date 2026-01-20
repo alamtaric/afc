@@ -2,6 +2,7 @@ export interface Family {
   id: string
   name: string
   pin_code: string
+  animal_code: string
   created_at: string
 }
 

@@ -19,11 +19,11 @@ function getSupabase(): SupabaseClient {
 }
 
 // 家族関連の関数
-export async function createFamily(name: string, pinCode: string) {
+export async function createFamily(name: string, pinCode: string, animalCode: string) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('families')
-    .insert({ name, pin_code: pinCode })
+    .insert({ name, pin_code: pinCode, animal_code: animalCode })
     .select()
     .single()
 
@@ -31,12 +31,13 @@ export async function createFamily(name: string, pinCode: string) {
   return data
 }
 
-export async function joinFamily(pinCode: string) {
+export async function joinFamily(pinCode: string, animalCode: string) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('families')
     .select()
     .eq('pin_code', pinCode)
+    .eq('animal_code', animalCode)
     .single()
 
   if (error) throw error
