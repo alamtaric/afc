@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ChatMessage from '@/components/ChatMessage'
 import MessageInput from '@/components/MessageInput'
+import NotificationPermission from '@/components/NotificationPermission'
 import { useFamily } from '@/hooks/useFamily'
 import { useMessages } from '@/hooks/useMessages'
 
@@ -53,6 +54,9 @@ export default function ChatPage() {
           ログアウト
         </button>
       </header>
+
+      {/* 通知許可バナー */}
+      <NotificationPermission />
 
       {/* メッセージ一覧 */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">

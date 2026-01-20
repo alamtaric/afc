@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import OneSignalProvider from '@/components/OneSignalProvider'
 
 export const metadata: Metadata = {
   title: 'ファミリーチャット',
@@ -32,7 +33,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
-      <body>{children}</body>
+      <body>
+        <OneSignalProvider>{children}</OneSignalProvider>
+      </body>
     </html>
   )
 }

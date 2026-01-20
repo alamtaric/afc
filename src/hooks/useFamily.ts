@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { FamilySession, Member } from '@/lib/types'
 import { joinFamily, createFamily, getMembers, createMember } from '@/lib/supabase'
+import { loginOneSignal, logoutOneSignal } from '@/components/OneSignalProvider'
 
 const SESSION_KEY = 'family-chat-session'
 
@@ -17,7 +18,9 @@ export function useFamily() {
     const stored = localStorage.getItem(SESSION_KEY)
     if (stored) {
       try {
-        setSession(JSON.parse(stored))
+        const parsed = JSON.parse(stored) as FamilySession
+        setSession(parsed)
+        loginOneSignal(parsed.familyId, parsed.memberId)
       } catch {
         localStorage.removeItem(SESSION_KEY)
       }
@@ -88,7 +91,7 @@ export function useFamily() {
   }, [])
 
   // メンバーを選択してセッション開始
-  const selectMember = useCallback((member: Member) => {
+  const selectMember = useCallback(async (member: Member) => {
     const newSession: FamilySession = {
       familyId: member.family_id,
       memberId: member.id,
@@ -97,12 +100,14 @@ export function useFamily() {
     }
     setSession(newSession)
     localStorage.setItem(SESSION_KEY, JSON.stringify(newSession))
+    await loginOneSignal(member.family_id, member.id)
   }, [])
 
   // ログアウト
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     setSession(null)
     localStorage.removeItem(SESSION_KEY)
+    await logoutOneSignal()
   }, [])
 
   return {
