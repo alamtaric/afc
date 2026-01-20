@@ -65,6 +65,7 @@ export default function MessageInput({ onSend, familyId, disabled }: MessageInpu
           <input
             ref={inputRef}
             type="text"
+            name="chat-message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -74,6 +75,9 @@ export default function MessageInput({ onSend, familyId, disabled }: MessageInpu
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck={false}
+            data-form-type="other"
+            data-lpignore="true"
+            enterKeyHint="send"
             className="flex-1 h-10 px-4 text-[16px] bg-slate-100 text-slate-700 placeholder-slate-400 rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-shadow"
           />
 

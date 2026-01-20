@@ -6,5 +6,33 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="102.4" fill="url(#bg)"/>
-  <text x="50%" y="55%" font-size="256" text-anchor="middle" dominant-baseline="middle">🏠</text>
+  <!-- 吹き出し -->
+  <path d="M 100 140
+           Q 100 100, 150 100
+           L 362 100
+           Q 412 100, 412 140
+           L 412 300
+           Q 412 340, 362 340
+           L 200 340
+           L 150 400
+           L 160 340
+           L 150 340
+           Q 100 340, 100 300
+           Z"
+        fill="white"/>
+  <!-- Family Chat テキスト -->
+  <text x="256" y="195"
+        font-family="Arial, sans-serif"
+        font-size="72"
+        font-weight="bold"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        fill="#4F46E5">Family</text>
+  <text x="256" y="275"
+        font-family="Arial, sans-serif"
+        font-size="72"
+        font-weight="bold"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        fill="#4F46E5">Chat</text>
 </svg>
