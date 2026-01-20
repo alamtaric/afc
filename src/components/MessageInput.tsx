@@ -70,7 +70,11 @@ export default function MessageInput({ onSend, familyId, disabled }: MessageInpu
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="メッセージ"
             disabled={disabled}
-            className="flex-1 h-10 px-4 text-[15px] bg-slate-100 text-slate-700 placeholder-slate-400 rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-shadow"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            className="flex-1 h-10 px-4 text-[16px] bg-slate-100 text-slate-700 placeholder-slate-400 rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-shadow"
           />
 
           <button

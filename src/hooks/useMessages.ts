@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Message, Member } from '@/lib/types'
-import { getMessages, sendMessage as sendMessageApi, subscribeToMessages, getMembers } from '@/lib/supabase'
+import { getMessages, getOlderMessages, sendMessage as sendMessageApi, subscribeToMessages, getMembers } from '@/lib/supabase'
 
 export function useMessages(familyId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [members, setMembers] = useState<Record<string, Member>>({})
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // メンバー情報をマップ形式で取得
@@ -39,6 +41,7 @@ export function useMessages(familyId: string | null) {
       try {
         const data = await getMessages(familyId)
         setMessages(data)
+        setHasMore(data.length >= 50)
       } catch {
         setError('メッセージの取得に失敗しました')
       } finally {
@@ -67,6 +70,28 @@ export function useMessages(familyId: string | null) {
     }
   }, [familyId, members])
 
+  // 過去のメッセージを読み込む
+  const loadMoreMessages = useCallback(async () => {
+    if (!familyId || loadingMore || !hasMore || messages.length === 0) return
+
+    setLoadingMore(true)
+    try {
+      const oldestMessage = messages[0]
+      const olderMessages = await getOlderMessages(familyId, oldestMessage.created_at)
+
+      if (olderMessages.length === 0) {
+        setHasMore(false)
+      } else {
+        setMessages((prev) => [...olderMessages, ...prev])
+        setHasMore(olderMessages.length >= 30)
+      }
+    } catch {
+      console.error('過去メッセージの取得に失敗')
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [familyId, loadingMore, hasMore, messages])
+
   // メッセージ送信
   const sendMessage = useCallback(async (
     senderId: string,
@@ -93,8 +118,11 @@ export function useMessages(familyId: string | null) {
   return {
     messages,
     loading,
+    loadingMore,
+    hasMore,
     error,
     sendMessage,
+    loadMoreMessages,
     clearError: () => setError(null),
   }
 }

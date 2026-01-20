@@ -18,13 +18,20 @@ export default function NotificationPermission() {
         return
       }
 
+      // iOS Safari (非PWA) では通知非対応なのでバナーを表示しない
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      if (isIOS && !isStandalone) {
+        return
+      }
+
       const permission = Notification.permission
       if (permission === 'default') {
         setShowBanner(true)
       }
     }
 
-    const timer = setTimeout(checkPermission, 1000)
+    const timer = setTimeout(checkPermission, 1500)
     return () => clearTimeout(timer)
   }, [])
 

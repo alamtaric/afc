@@ -96,7 +96,44 @@ export async function sendMessage(
   return data
 }
 
-export async function getMessages(familyId: string) {
+export async function getMessages(
+  familyId: string,
+  options?: { before?: string; limit?: number }
+) {
+  const supabase = getSupabase()
+  const limit = options?.limit || 50
+
+  let query = supabase
+    .from('messages')
+    .select(`
+      *,
+      sender:members(*)
+    `)
+    .eq('family_id', familyId)
+
+  if (options?.before) {
+    query = query.lt('created_at', options.before)
+  } else {
+    // 初回は1日前から
+    const oneDayAgo = new Date()
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+    query = query.gte('created_at', oneDayAgo.toISOString())
+  }
+
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  // 古い順に並び替えて返す
+  return (data || []).reverse()
+}
+
+export async function getOlderMessages(
+  familyId: string,
+  beforeDate: string,
+  limit: number = 30
+) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('messages')
@@ -105,10 +142,12 @@ export async function getMessages(familyId: string) {
       sender:members(*)
     `)
     .eq('family_id', familyId)
-    .order('created_at', { ascending: true })
+    .lt('created_at', beforeDate)
+    .order('created_at', { ascending: false })
+    .limit(limit)
 
   if (error) throw error
-  return data
+  return (data || []).reverse()
 }
 
 // 画像アップロード

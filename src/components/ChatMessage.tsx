@@ -6,54 +6,89 @@ import { Message, Member } from '@/lib/types'
 interface ChatMessageProps {
   message: Message
   isOwn: boolean
+  showDate?: boolean
 }
 
-export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
-  const sender = message.sender as Member | undefined
-  const time = new Date(message.created_at).toLocaleTimeString('ja-JP', {
+function formatDateTime(dateStr: string): { time: string; date?: string } {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+  const time = date.toLocaleTimeString('ja-JP', {
     hour: '2-digit',
     minute: '2-digit',
   })
 
+  if (messageDate >= today) {
+    return { time }
+  } else if (messageDate >= yesterday) {
+    return { time, date: '昨日' }
+  } else {
+    const dateStr = date.toLocaleDateString('ja-JP', {
+      month: 'short',
+      day: 'numeric',
+    })
+    return { time, date: dateStr }
+  }
+}
+
+export default function ChatMessage({ message, isOwn, showDate }: ChatMessageProps) {
+  const sender = message.sender as Member | undefined
+  const { time, date } = formatDateTime(message.created_at)
+  const hasContent = message.content && message.content.trim().length > 0
+
   return (
-    <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-      {/* アバター */}
-      <div className="flex-shrink-0">
-        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-lg shadow-sm border border-slate-100">
-          {sender?.avatar_emoji || '👤'}
+    <>
+      {showDate && date && (
+        <div className="flex justify-center my-3">
+          <span className="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
+            {date}
+          </span>
         </div>
-      </div>
-
-      {/* メッセージ本文 */}
-      <div className={`flex flex-col gap-1 max-w-[75%] ${isOwn ? 'items-end' : 'items-start'}`}>
-        <span className="text-xs text-slate-400 px-1">
-          {sender?.name || ''}
-        </span>
-
-        <div
-          className={`rounded-2xl px-4 py-2 text-[15px] leading-relaxed shadow-sm
-            ${isOwn
-              ? 'bg-gradient-to-br from-primary to-secondary text-white rounded-tr-sm'
-              : 'bg-white text-slate-700 rounded-tl-sm border border-slate-100'
-            }`}
-        >
-          {message.content}
-        </div>
-
-        {message.image_url && (
-          <div className="mt-1 rounded-xl overflow-hidden shadow-sm">
-            <Image
-              src={message.image_url}
-              alt=""
-              width={240}
-              height={240}
-              className="object-cover"
-            />
+      )}
+      <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+        {/* アバター */}
+        <div className="flex-shrink-0">
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-lg shadow-sm border border-slate-100">
+            {sender?.avatar_emoji || '👤'}
           </div>
-        )}
+        </div>
 
-        <span className="text-[10px] text-slate-300 px-1">{time}</span>
+        {/* メッセージ本文 */}
+        <div className={`flex flex-col gap-1 max-w-[75%] ${isOwn ? 'items-end' : 'items-start'}`}>
+          <span className="text-xs text-slate-400 px-1">
+            {sender?.name || ''}
+          </span>
+
+          {hasContent && (
+            <div
+              className={`rounded-2xl px-4 py-2 text-[15px] leading-relaxed shadow-sm
+                ${isOwn
+                  ? 'bg-gradient-to-br from-primary to-secondary text-white rounded-tr-sm'
+                  : 'bg-white text-slate-700 rounded-tl-sm border border-slate-100'
+                }`}
+            >
+              {message.content}
+            </div>
+          )}
+
+          {message.image_url && (
+            <div className={`${hasContent ? 'mt-1' : ''} rounded-xl overflow-hidden shadow-sm`}>
+              <Image
+                src={message.image_url}
+                alt=""
+                width={240}
+                height={240}
+                className="object-cover"
+              />
+            </div>
+          )}
+
+          <span className="text-[10px] text-slate-300 px-1">{time}</span>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

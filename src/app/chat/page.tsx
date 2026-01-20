@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ChatMessage from '@/components/ChatMessage'
 import MessageInput from '@/components/MessageInput'
@@ -8,13 +8,32 @@ import NotificationPermission from '@/components/NotificationPermission'
 import { useFamily } from '@/hooks/useFamily'
 import { useMessages } from '@/hooks/useMessages'
 
+function shouldShowDate(currentDate: string, prevDate: string | null): boolean {
+  if (!prevDate) return true
+  const current = new Date(currentDate)
+  const prev = new Date(prevDate)
+  return (
+    current.getFullYear() !== prev.getFullYear() ||
+    current.getMonth() !== prev.getMonth() ||
+    current.getDate() !== prev.getDate()
+  )
+}
+
 export default function ChatPage() {
   const router = useRouter()
   const { session, logout, loading: familyLoading } = useFamily()
-  const { messages, loading: messagesLoading, sendMessage } = useMessages(
-    session?.familyId || null
-  )
+  const {
+    messages,
+    loading: messagesLoading,
+    loadingMore,
+    hasMore,
+    sendMessage,
+    loadMoreMessages,
+  } = useMessages(session?.familyId || null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const prevScrollHeight = useRef<number>(0)
 
   useEffect(() => {
     if (!familyLoading && !session) {
@@ -23,8 +42,34 @@ export default function ChatPage() {
   }, [session, familyLoading, router])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (messages.length > 0 && !loadingMore) {
+      if (isInitialLoad) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
+        setIsInitialLoad(false)
+      } else if (prevScrollHeight.current === 0) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
+  }, [messages, isInitialLoad, loadingMore])
+
+  // 過去メッセージ読み込み後にスクロール位置を維持
+  useEffect(() => {
+    if (!loadingMore && prevScrollHeight.current > 0 && messagesContainerRef.current) {
+      const newScrollHeight = messagesContainerRef.current.scrollHeight
+      messagesContainerRef.current.scrollTop = newScrollHeight - prevScrollHeight.current
+      prevScrollHeight.current = 0
+    }
+  }, [loadingMore, messages])
+
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current
+    if (!container || loadingMore || !hasMore) return
+
+    if (container.scrollTop < 100) {
+      prevScrollHeight.current = container.scrollHeight
+      loadMoreMessages()
+    }
+  }, [loadingMore, hasMore, loadMoreMessages])
 
   const handleSend = async (content: string, imageUrl?: string) => {
     if (!session) return
@@ -59,7 +104,26 @@ export default function ChatPage() {
       <NotificationPermission />
 
       {/* メッセージ一覧 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 space-y-3"
+      >
+        {loadingMore && (
+          <div className="text-center text-slate-400 py-2 text-sm">
+            読み込み中...
+          </div>
+        )}
+        {hasMore && !loadingMore && messages.length > 0 && (
+          <div className="text-center py-2">
+            <button
+              onClick={loadMoreMessages}
+              className="text-xs text-slate-400 hover:text-slate-600"
+            >
+              ↑ 過去のメッセージを読み込む
+            </button>
+          </div>
+        )}
         {messagesLoading ? (
           <div className="text-center text-slate-400 py-8">読み込み中...</div>
         ) : messages.length === 0 ? (
@@ -68,11 +132,15 @@ export default function ChatPage() {
             <p className="text-slate-400">メッセージを送ろう</p>
           </div>
         ) : (
-          messages.map((message) => (
+          messages.map((message, index) => (
             <ChatMessage
               key={message.id}
               message={message}
               isOwn={message.sender_id === session.memberId}
+              showDate={shouldShowDate(
+                message.created_at,
+                index > 0 ? messages[index - 1].created_at : null
+              )}
             />
           ))
         )}
