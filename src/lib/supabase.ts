@@ -114,12 +114,8 @@ export async function getMessages(
 
   if (options?.before) {
     query = query.lt('created_at', options.before)
-  } else {
-    // 初回は1日前から
-    const oneDayAgo = new Date()
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1)
-    query = query.gte('created_at', oneDayAgo.toISOString())
   }
+  // 日付制限なしで最新N件を取得
 
   const { data, error } = await query
     .order('created_at', { ascending: false })

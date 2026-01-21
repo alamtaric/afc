@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Message, Member } from '@/lib/types'
 import { getMessages, getOlderMessages, sendMessage as sendMessageApi, subscribeToMessages, getMembers } from '@/lib/supabase'
 
@@ -11,6 +11,12 @@ export function useMessages(familyId: string | null) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const membersRef = useRef<Record<string, Member>>({})
+
+  // membersRefを同期
+  useEffect(() => {
+    membersRef.current = members
+  }, [members])
 
   // メンバー情報をマップ形式で取得
   useEffect(() => {
@@ -32,23 +38,25 @@ export function useMessages(familyId: string | null) {
     loadMembers()
   }, [familyId])
 
-  // メッセージ取得
-  useEffect(() => {
+  // メッセージ取得関数
+  const loadMessages = useCallback(async (showLoading = true) => {
     if (!familyId) return
 
-    const loadMessages = async () => {
-      setLoading(true)
-      try {
-        const data = await getMessages(familyId)
-        setMessages(data)
-        setHasMore(data.length >= 50)
-      } catch {
-        setError('メッセージの取得に失敗しました')
-      } finally {
-        setLoading(false)
-      }
+    if (showLoading) setLoading(true)
+    try {
+      const data = await getMessages(familyId)
+      setMessages(data)
+      setHasMore(data.length >= 50)
+    } catch {
+      setError('メッセージの取得に失敗しました')
+    } finally {
+      if (showLoading) setLoading(false)
     }
+  }, [familyId])
 
+  // 初回メッセージ取得とリアルタイム購読
+  useEffect(() => {
+    if (!familyId) return
     loadMessages()
 
     // リアルタイム購読
@@ -56,10 +64,10 @@ export function useMessages(familyId: string | null) {
       setMessages((prev) => {
         // 重複チェック
         if (prev.some((m) => m.id === newMessage.id)) return prev
-        // senderを追加
+        // senderを追加（membersRefを使用して再購読を防ぐ）
         const messageWithSender = {
           ...newMessage,
-          sender: members[newMessage.sender_id],
+          sender: membersRef.current[newMessage.sender_id],
         }
         return [...prev, messageWithSender]
       })
@@ -68,7 +76,19 @@ export function useMessages(familyId: string | null) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [familyId, members])
+  }, [familyId, loadMessages])
+
+  // ページがアクティブになったときにメッセージを再取得
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && familyId) {
+        loadMessages(false) // ローディング表示なしで再取得
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [familyId, loadMessages])
 
   // 過去のメッセージを読み込む
   const loadMoreMessages = useCallback(async () => {
