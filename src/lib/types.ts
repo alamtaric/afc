@@ -23,6 +23,15 @@ export interface MessageRead {
   member?: Member
 }
 
+export interface Reaction {
+  id: string
+  message_id: string
+  member_id: string
+  emoji: string
+  created_at: string
+  member?: Member
+}
+
 export interface Message {
   id: string
   family_id: string
@@ -32,6 +41,7 @@ export interface Message {
   created_at: string
   sender?: Member
   reads?: MessageRead[]
+  reactions?: Reaction[]
 }
 
 export interface FamilySession {

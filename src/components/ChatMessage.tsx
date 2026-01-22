@@ -1,13 +1,43 @@
 'use client'
 
+import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { Message, Member } from '@/lib/types'
+import { Message, Member, Reaction } from '@/lib/types'
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉']
 
 interface ChatMessageProps {
   message: Message
   isOwn: boolean
   showDate?: boolean
   currentMemberId?: string
+  onReaction?: (messageId: string, emoji: string) => void
+}
+
+// URLを検出してリンクに変換
+function renderContentWithLinks(content: string, isOwn: boolean) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const parts = content.split(urlRegex)
+
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      // URLをリセットしてから再テスト
+      urlRegex.lastIndex = 0
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`underline break-all ${isOwn ? 'text-white/90 hover:text-white' : 'text-blue-500 hover:text-blue-600'}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      )
+    }
+    return part
+  })
 }
 
 function formatDateTime(dateStr: string): { time: string; date?: string } {
@@ -35,7 +65,10 @@ function formatDateTime(dateStr: string): { time: string; date?: string } {
   }
 }
 
-export default function ChatMessage({ message, isOwn, showDate, currentMemberId }: ChatMessageProps) {
+export default function ChatMessage({ message, isOwn, showDate, currentMemberId, onReaction }: ChatMessageProps) {
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [showReactionPicker, setShowReactionPicker] = useState(false)
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const sender = message.sender as Member | undefined
   const { time, date } = formatDateTime(message.created_at)
   const hasContent = message.content && message.content.trim().length > 0
@@ -44,6 +77,36 @@ export default function ChatMessage({ message, isOwn, showDate, currentMemberId 
   const readers = (message.reads || []).filter(
     (r) => r.member_id !== message.sender_id && r.member_id !== currentMemberId
   )
+
+  // リアクションを絵文字ごとにグループ化
+  const groupedReactions = (message.reactions || []).reduce((acc, reaction) => {
+    if (!acc[reaction.emoji]) {
+      acc[reaction.emoji] = []
+    }
+    acc[reaction.emoji].push(reaction)
+    return acc
+  }, {} as Record<string, Reaction[]>)
+
+  // 長押し開始
+  const handleTouchStart = useCallback(() => {
+    longPressTimer.current = setTimeout(() => {
+      setShowReactionPicker(true)
+    }, 500)
+  }, [])
+
+  // 長押し終了
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }, [])
+
+  // リアクション選択
+  const handleReaction = useCallback((emoji: string) => {
+    onReaction?.(message.id, emoji)
+    setShowReactionPicker(false)
+  }, [message.id, onReaction])
 
   return (
     <>
@@ -68,20 +131,74 @@ export default function ChatMessage({ message, isOwn, showDate, currentMemberId 
             {sender?.name || ''}
           </span>
 
-          {hasContent && (
-            <div
-              className={`rounded-2xl px-4 py-2 text-[15px] leading-relaxed shadow-sm
-                ${isOwn
-                  ? 'bg-gradient-to-br from-primary to-secondary text-white rounded-tr-sm'
-                  : 'bg-white text-slate-700 rounded-tl-sm border border-slate-100'
-                }`}
-            >
-              {message.content}
+          {/* メッセージと時刻を同じ行に */}
+          <div className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div className="relative">
+              {hasContent && (
+                <div
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchCancel={handleTouchEnd}
+                  onContextMenu={(e) => { e.preventDefault(); setShowReactionPicker(true) }}
+                  className={`rounded-2xl px-4 py-2 text-[15px] leading-relaxed shadow-sm select-none
+                    ${isOwn
+                      ? 'bg-gradient-to-br from-primary to-secondary text-white rounded-tr-sm'
+                      : 'bg-white text-slate-700 rounded-tl-sm border border-slate-100'
+                    }`}
+                >
+                  {renderContentWithLinks(message.content, isOwn)}
+                </div>
+              )}
+
+              {/* リアクションピッカー */}
+              {showReactionPicker && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowReactionPicker(false)}
+                  />
+                  <div className={`absolute z-50 ${isOwn ? 'right-0' : 'left-0'} -top-12 bg-white rounded-full shadow-lg px-2 py-1 flex gap-1`}>
+                    {REACTION_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(emoji)}
+                        className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors text-lg"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-          )}
+
+            {/* 時刻と既読アイコン */}
+            <div className={`flex items-center gap-1 flex-shrink-0 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+              <span className="text-[10px] text-slate-300">{time}</span>
+              {isOwn && readers.length > 0 && (
+                <div className="flex -space-x-1">
+                  {readers.slice(0, 5).map((read) => (
+                    <span
+                      key={read.member_id}
+                      className="w-4 h-4 bg-slate-100 rounded-full flex items-center justify-center text-[8px] border border-white"
+                      title={read.member?.name || ''}
+                    >
+                      {read.member?.avatar_emoji || '👤'}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           {message.image_url && (
-            <div className={`${hasContent ? 'mt-1' : ''} rounded-xl overflow-hidden shadow-sm`}>
+            <button
+              onClick={() => setShowImageModal(true)}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
+              className={`${hasContent ? 'mt-1' : ''} rounded-xl overflow-hidden shadow-sm cursor-zoom-in`}
+            >
               <Image
                 src={message.image_url}
                 alt=""
@@ -89,28 +206,91 @@ export default function ChatMessage({ message, isOwn, showDate, currentMemberId 
                 height={240}
                 className="object-cover"
               />
-            </div>
+            </button>
           )}
 
-          <div className={`flex items-center gap-1 px-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-            <span className="text-[10px] text-slate-300">{time}</span>
-            {/* 既読アイコン（自分のメッセージのみ表示） */}
-            {isOwn && readers.length > 0 && (
-              <div className="flex -space-x-1">
-                {readers.slice(0, 5).map((read) => (
-                  <span
-                    key={read.member_id}
-                    className="w-4 h-4 bg-slate-100 rounded-full flex items-center justify-center text-[8px] border border-white"
-                    title={read.member?.name || ''}
+          {/* リアクション表示 */}
+          {Object.keys(groupedReactions).length > 0 && (
+            <div className={`flex flex-wrap gap-1 px-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              {Object.entries(groupedReactions).map(([emoji, reactions]) => {
+                const hasMyReaction = reactions.some((r) => r.member_id === currentMemberId)
+                const reactionLongPressTimer = { current: null as NodeJS.Timeout | null }
+                return (
+                  <button
+                    key={emoji}
+                    onClick={() => onReaction?.(message.id, emoji)}
+                    onTouchStart={() => {
+                      if (hasMyReaction) {
+                        reactionLongPressTimer.current = setTimeout(() => {
+                          onReaction?.(message.id, emoji) // 長押しで削除
+                        }, 500)
+                      }
+                    }}
+                    onTouchEnd={() => {
+                      if (reactionLongPressTimer.current) {
+                        clearTimeout(reactionLongPressTimer.current)
+                        reactionLongPressTimer.current = null
+                      }
+                    }}
+                    onTouchCancel={() => {
+                      if (reactionLongPressTimer.current) {
+                        clearTimeout(reactionLongPressTimer.current)
+                        reactionLongPressTimer.current = null
+                      }
+                    }}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors
+                      ${hasMyReaction
+                        ? 'bg-primary/20 text-primary border border-primary/30'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
                   >
-                    {read.member?.avatar_emoji || '👤'}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+                    <span>{emoji}</span>
+                    <span>{reactions.length}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* 画像モーダル */}
+      {showImageModal && message.image_url && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white text-3xl font-light hover:opacity-70"
+            onClick={() => setShowImageModal(false)}
+          >
+            &times;
+          </button>
+          <Image
+            src={message.image_url}
+            alt=""
+            width={1200}
+            height={1200}
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <a
+            href={message.image_url}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-6 right-6 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-sm transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            保存
+          </a>
+        </div>
+      )}
     </>
   )
 }

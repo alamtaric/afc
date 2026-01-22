@@ -109,7 +109,8 @@ export async function getMessages(
     .select(`
       *,
       sender:members(*),
-      reads:message_reads(*, member:members(*))
+      reads:message_reads(*, member:members(*)),
+      reactions(*, member:members(*))
     `)
     .eq('family_id', familyId)
 
@@ -138,7 +139,8 @@ export async function getOlderMessages(
     .select(`
       *,
       sender:members(*),
-      reads:message_reads(*, member:members(*))
+      reads:message_reads(*, member:members(*)),
+      reactions(*, member:members(*))
     `)
     .eq('family_id', familyId)
     .lt('created_at', beforeDate)
@@ -223,6 +225,64 @@ export function subscribeToMessageReads(
         table: 'message_reads',
       },
       (payload) => callback(payload.new)
+    )
+    .subscribe()
+}
+
+// リアクション関連の関数
+export async function addReaction(messageId: string, memberId: string, emoji: string) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('reactions')
+    .upsert(
+      { message_id: messageId, member_id: memberId, emoji },
+      { onConflict: 'message_id,member_id,emoji', ignoreDuplicates: true }
+    )
+    .select('*, member:members(*)')
+    .single()
+
+  if (error && error.code !== '23505') throw error // 重複以外のエラーはthrow
+  return data
+}
+
+export async function removeReaction(messageId: string, memberId: string, emoji: string) {
+  const supabase = getSupabase()
+  const { error } = await supabase
+    .from('reactions')
+    .delete()
+    .eq('message_id', messageId)
+    .eq('member_id', memberId)
+    .eq('emoji', emoji)
+
+  if (error) throw error
+}
+
+// リアクションのリアルタイム購読
+export function subscribeToReactions(
+  familyId: string,
+  onInsert: (reaction: any) => void,
+  onDelete: (reaction: any) => void
+) {
+  const supabase = getSupabase()
+  return supabase
+    .channel(`reactions:${familyId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'reactions',
+      },
+      (payload) => onInsert(payload.new)
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'reactions',
+      },
+      (payload) => onDelete(payload.old)
     )
     .subscribe()
 }

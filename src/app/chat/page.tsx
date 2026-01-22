@@ -30,6 +30,7 @@ export default function ChatPage() {
     sendMessage,
     loadMoreMessages,
     markMessagesAsRead,
+    toggleReaction,
   } = useMessages(session?.familyId || null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -198,6 +199,7 @@ export default function ChatPage() {
                   index > 0 ? messages[index - 1].created_at : null
                 )}
                 currentMemberId={session.memberId}
+                onReaction={(messageId, emoji) => toggleReaction(messageId, session.memberId, emoji)}
               />
             </div>
           ))

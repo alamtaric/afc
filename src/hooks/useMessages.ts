@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Message, Member } from '@/lib/types'
-import { getMessages, getOlderMessages, sendMessage as sendMessageApi, subscribeToMessages, subscribeToMessageReads, markAsRead, getMembers } from '@/lib/supabase'
+import { getMessages, getOlderMessages, sendMessage as sendMessageApi, subscribeToMessages, subscribeToMessageReads, subscribeToReactions, markAsRead, addReaction as addReactionApi, removeReaction as removeReactionApi, getMembers } from '@/lib/supabase'
 
 export function useMessages(familyId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -69,6 +69,7 @@ export function useMessages(familyId: string | null) {
           ...newMessage,
           sender: membersRef.current[newMessage.sender_id],
           reads: [],
+          reactions: [],
         }
         return [...prev, messageWithSender]
       })
@@ -89,9 +90,41 @@ export function useMessages(familyId: string | null) {
       )
     })
 
+    // リアクションのリアルタイム購読
+    const reactionSubscription = subscribeToReactions(
+      familyId,
+      // INSERT
+      (newReaction) => {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id !== newReaction.message_id) return msg
+            // 既にリアクションに含まれていたらスキップ
+            if (msg.reactions?.some((r) => r.id === newReaction.id)) return msg
+            return {
+              ...msg,
+              reactions: [...(msg.reactions || []), { ...newReaction, member: membersRef.current[newReaction.member_id] }],
+            }
+          })
+        )
+      },
+      // DELETE
+      (oldReaction) => {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id !== oldReaction.message_id) return msg
+            return {
+              ...msg,
+              reactions: (msg.reactions || []).filter((r) => r.id !== oldReaction.id),
+            }
+          })
+        )
+      }
+    )
+
     return () => {
       messageSubscription.unsubscribe()
       readSubscription.unsubscribe()
+      reactionSubscription.unsubscribe()
     }
   }, [familyId, loadMessages])
 
@@ -144,6 +177,7 @@ export function useMessages(familyId: string | null) {
         ...message,
         sender: members[senderId],
         reads: [],
+        reactions: [],
       }
       setMessages((prev) => [...prev, messageWithSender])
       return message
@@ -164,6 +198,25 @@ export function useMessages(familyId: string | null) {
     }
   }, [])
 
+  // リアクションをトグル
+  const toggleReaction = useCallback(async (messageId: string, memberId: string, emoji: string) => {
+    // 既にリアクションがあるかチェック
+    const message = messages.find((m) => m.id === messageId)
+    const existingReaction = message?.reactions?.find(
+      (r) => r.member_id === memberId && r.emoji === emoji
+    )
+
+    try {
+      if (existingReaction) {
+        await removeReactionApi(messageId, memberId, emoji)
+      } else {
+        await addReactionApi(messageId, memberId, emoji)
+      }
+    } catch {
+      console.error('リアクション更新に失敗')
+    }
+  }, [messages])
+
   return {
     messages,
     members,
@@ -174,6 +227,7 @@ export function useMessages(familyId: string | null) {
     sendMessage,
     loadMoreMessages,
     markMessagesAsRead,
+    toggleReaction,
     clearError: () => setError(null),
   }
 }
