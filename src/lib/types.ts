@@ -15,6 +15,14 @@ export interface Member {
   created_at: string
 }
 
+export interface MessageRead {
+  id: string
+  message_id: string
+  member_id: string
+  read_at: string
+  member?: Member
+}
+
 export interface Message {
   id: string
   family_id: string
@@ -23,6 +31,7 @@ export interface Message {
   image_url: string | null
   created_at: string
   sender?: Member
+  reads?: MessageRead[]
 }
 
 export interface FamilySession {

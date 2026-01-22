@@ -7,6 +7,7 @@ interface ChatMessageProps {
   message: Message
   isOwn: boolean
   showDate?: boolean
+  currentMemberId?: string
 }
 
 function formatDateTime(dateStr: string): { time: string; date?: string } {
@@ -34,10 +35,15 @@ function formatDateTime(dateStr: string): { time: string; date?: string } {
   }
 }
 
-export default function ChatMessage({ message, isOwn, showDate }: ChatMessageProps) {
+export default function ChatMessage({ message, isOwn, showDate, currentMemberId }: ChatMessageProps) {
   const sender = message.sender as Member | undefined
   const { time, date } = formatDateTime(message.created_at)
   const hasContent = message.content && message.content.trim().length > 0
+
+  // 自分以外の既読者を取得
+  const readers = (message.reads || []).filter(
+    (r) => r.member_id !== message.sender_id && r.member_id !== currentMemberId
+  )
 
   return (
     <>
@@ -86,7 +92,23 @@ export default function ChatMessage({ message, isOwn, showDate }: ChatMessagePro
             </div>
           )}
 
-          <span className="text-[10px] text-slate-300 px-1">{time}</span>
+          <div className={`flex items-center gap-1 px-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+            <span className="text-[10px] text-slate-300">{time}</span>
+            {/* 既読アイコン（自分のメッセージのみ表示） */}
+            {isOwn && readers.length > 0 && (
+              <div className="flex -space-x-1">
+                {readers.slice(0, 5).map((read) => (
+                  <span
+                    key={read.member_id}
+                    className="w-4 h-4 bg-slate-100 rounded-full flex items-center justify-center text-[8px] border border-white"
+                    title={read.member?.name || ''}
+                  >
+                    {read.member?.avatar_emoji || '👤'}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

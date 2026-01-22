@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Message, Member } from '@/lib/types'
-import { getMessages, getOlderMessages, sendMessage as sendMessageApi, subscribeToMessages, getMembers } from '@/lib/supabase'
+import { getMessages, getOlderMessages, sendMessage as sendMessageApi, subscribeToMessages, subscribeToMessageReads, markAsRead, getMembers } from '@/lib/supabase'
 
 export function useMessages(familyId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -59,8 +59,8 @@ export function useMessages(familyId: string | null) {
     if (!familyId) return
     loadMessages()
 
-    // リアルタイム購読
-    const subscription = subscribeToMessages(familyId, (newMessage) => {
+    // メッセージのリアルタイム購読
+    const messageSubscription = subscribeToMessages(familyId, (newMessage) => {
       setMessages((prev) => {
         // 重複チェック
         if (prev.some((m) => m.id === newMessage.id)) return prev
@@ -68,13 +68,30 @@ export function useMessages(familyId: string | null) {
         const messageWithSender = {
           ...newMessage,
           sender: membersRef.current[newMessage.sender_id],
+          reads: [],
         }
         return [...prev, messageWithSender]
       })
     })
 
+    // 既読のリアルタイム購読
+    const readSubscription = subscribeToMessageReads(familyId, (newRead) => {
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id !== newRead.message_id) return msg
+          // 既に既読に含まれていたらスキップ
+          if (msg.reads?.some((r) => r.member_id === newRead.member_id)) return msg
+          return {
+            ...msg,
+            reads: [...(msg.reads || []), { ...newRead, member: membersRef.current[newRead.member_id] }],
+          }
+        })
+      )
+    })
+
     return () => {
-      subscription.unsubscribe()
+      messageSubscription.unsubscribe()
+      readSubscription.unsubscribe()
     }
   }, [familyId, loadMessages])
 
@@ -126,6 +143,7 @@ export function useMessages(familyId: string | null) {
       const messageWithSender: Message = {
         ...message,
         sender: members[senderId],
+        reads: [],
       }
       setMessages((prev) => [...prev, messageWithSender])
       return message
@@ -135,14 +153,27 @@ export function useMessages(familyId: string | null) {
     }
   }, [familyId, members])
 
+  // 既読をマーク（自分以外のメッセージのみ）
+  const markMessagesAsRead = useCallback(async (messageIds: string[], memberId: string) => {
+    if (messageIds.length === 0) return
+
+    try {
+      await markAsRead(messageIds, memberId)
+    } catch {
+      console.error('既読マークに失敗')
+    }
+  }, [])
+
   return {
     messages,
+    members,
     loading,
     loadingMore,
     hasMore,
     error,
     sendMessage,
     loadMoreMessages,
+    markMessagesAsRead,
     clearError: () => setError(null),
   }
 }

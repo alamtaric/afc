@@ -108,7 +108,8 @@ export async function getMessages(
     .from('messages')
     .select(`
       *,
-      sender:members(*)
+      sender:members(*),
+      reads:message_reads(*, member:members(*))
     `)
     .eq('family_id', familyId)
 
@@ -136,7 +137,8 @@ export async function getOlderMessages(
     .from('messages')
     .select(`
       *,
-      sender:members(*)
+      sender:members(*),
+      reads:message_reads(*, member:members(*))
     `)
     .eq('family_id', familyId)
     .lt('created_at', beforeDate)
@@ -166,6 +168,24 @@ export async function uploadImage(file: File, familyId: string) {
   return data.publicUrl
 }
 
+// 既読関連の関数
+export async function markAsRead(messageIds: string[], memberId: string) {
+  if (messageIds.length === 0) return
+
+  const supabase = getSupabase()
+  const records = messageIds.map((messageId) => ({
+    message_id: messageId,
+    member_id: memberId,
+  }))
+
+  // upsertで重複を無視
+  const { error } = await supabase
+    .from('message_reads')
+    .upsert(records, { onConflict: 'message_id,member_id', ignoreDuplicates: true })
+
+  if (error) throw error
+}
+
 // リアルタイム購読
 export function subscribeToMessages(
   familyId: string,
@@ -181,6 +201,26 @@ export function subscribeToMessages(
         schema: 'public',
         table: 'messages',
         filter: `family_id=eq.${familyId}`,
+      },
+      (payload) => callback(payload.new)
+    )
+    .subscribe()
+}
+
+// 既読のリアルタイム購読
+export function subscribeToMessageReads(
+  familyId: string,
+  callback: (read: any) => void
+) {
+  const supabase = getSupabase()
+  return supabase
+    .channel(`message_reads:${familyId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'message_reads',
       },
       (payload) => callback(payload.new)
     )

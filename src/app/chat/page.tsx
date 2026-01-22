@@ -29,11 +29,14 @@ export default function ChatPage() {
     hasMore,
     sendMessage,
     loadMoreMessages,
+    markMessagesAsRead,
   } = useMessages(session?.familyId || null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const prevScrollHeight = useRef<number>(0)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const markedAsReadRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     if (!familyLoading && !session) {
@@ -70,6 +73,55 @@ export default function ChatPage() {
       loadMoreMessages()
     }
   }, [loadingMore, hasMore, loadMoreMessages])
+
+  // Intersection Observerで既読をマーク
+  useEffect(() => {
+    if (!session) return
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const visibleMessageIds: string[] = []
+
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const messageId = entry.target.getAttribute('data-message-id')
+            const senderId = entry.target.getAttribute('data-sender-id')
+
+            // 自分のメッセージ以外で、まだ既読マークしていないもの
+            if (messageId && senderId !== session.memberId && !markedAsReadRef.current.has(messageId)) {
+              visibleMessageIds.push(messageId)
+              markedAsReadRef.current.add(messageId)
+            }
+          }
+        })
+
+        if (visibleMessageIds.length > 0) {
+          markMessagesAsRead(visibleMessageIds, session.memberId)
+        }
+      },
+      { threshold: 0.5 }
+    )
+
+    return () => {
+      observerRef.current?.disconnect()
+    }
+  }, [session, markMessagesAsRead])
+
+  // メッセージが変わったら監視対象を更新
+  useEffect(() => {
+    if (!observerRef.current || !messagesContainerRef.current) return
+
+    const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-id]')
+    messageElements.forEach((el) => {
+      observerRef.current?.observe(el)
+    })
+
+    return () => {
+      messageElements.forEach((el) => {
+        observerRef.current?.unobserve(el)
+      })
+    }
+  }, [messages])
 
   const handleSend = async (content: string, imageUrl?: string) => {
     if (!session) return
@@ -133,15 +185,21 @@ export default function ChatPage() {
           </div>
         ) : (
           messages.map((message, index) => (
-            <ChatMessage
+            <div
               key={message.id}
-              message={message}
-              isOwn={message.sender_id === session.memberId}
-              showDate={shouldShowDate(
-                message.created_at,
-                index > 0 ? messages[index - 1].created_at : null
-              )}
-            />
+              data-message-id={message.id}
+              data-sender-id={message.sender_id}
+            >
+              <ChatMessage
+                message={message}
+                isOwn={message.sender_id === session.memberId}
+                showDate={shouldShowDate(
+                  message.created_at,
+                  index > 0 ? messages[index - 1].created_at : null
+                )}
+                currentMemberId={session.memberId}
+              />
+            </div>
           ))
         )}
         <div ref={messagesEndRef} />
