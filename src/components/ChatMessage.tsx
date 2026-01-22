@@ -214,30 +214,10 @@ export default function ChatMessage({ message, isOwn, showDate, currentMemberId,
             <div className={`flex flex-wrap gap-1 px-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
               {Object.entries(groupedReactions).map(([emoji, reactions]) => {
                 const hasMyReaction = reactions.some((r) => r.member_id === currentMemberId)
-                const reactionLongPressTimer = { current: null as NodeJS.Timeout | null }
                 return (
                   <button
                     key={emoji}
                     onClick={() => onReaction?.(message.id, emoji)}
-                    onTouchStart={() => {
-                      if (hasMyReaction) {
-                        reactionLongPressTimer.current = setTimeout(() => {
-                          onReaction?.(message.id, emoji) // 長押しで削除
-                        }, 500)
-                      }
-                    }}
-                    onTouchEnd={() => {
-                      if (reactionLongPressTimer.current) {
-                        clearTimeout(reactionLongPressTimer.current)
-                        reactionLongPressTimer.current = null
-                      }
-                    }}
-                    onTouchCancel={() => {
-                      if (reactionLongPressTimer.current) {
-                        clearTimeout(reactionLongPressTimer.current)
-                        reactionLongPressTimer.current = null
-                      }
-                    }}
                     className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors
                       ${hasMyReaction
                         ? 'bg-primary/20 text-primary border border-primary/30'
@@ -260,12 +240,6 @@ export default function ChatMessage({ message, isOwn, showDate, currentMemberId,
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setShowImageModal(false)}
         >
-          <button
-            className="absolute top-4 right-4 text-white text-3xl font-light hover:opacity-70"
-            onClick={() => setShowImageModal(false)}
-          >
-            &times;
-          </button>
           <Image
             src={message.image_url}
             alt=""
@@ -274,21 +248,6 @@ export default function ChatMessage({ message, isOwn, showDate, currentMemberId,
             className="max-w-full max-h-full object-contain"
             onClick={(e) => e.stopPropagation()}
           />
-          <a
-            href={message.image_url}
-            download
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute bottom-6 right-6 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-sm transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            保存
-          </a>
         </div>
       )}
     </>
