@@ -132,7 +132,7 @@ export default function ChatMessage({ message, isOwn, showDate, currentMemberId,
           </span>
 
           {/* メッセージと時刻を同じ行に */}
-          <div className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+          <div className={`flex items-center gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
             <div className="relative">
               {hasContent && (
                 <div
