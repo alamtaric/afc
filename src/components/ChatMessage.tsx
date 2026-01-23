@@ -240,6 +240,12 @@ export default function ChatMessage({ message, isOwn, showDate, currentMemberId,
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setShowImageModal(false)}
         >
+          <button
+            className="absolute top-4 right-4 text-white text-3xl font-light hover:opacity-70"
+            onClick={() => setShowImageModal(false)}
+          >
+            &times;
+          </button>
           <Image
             src={message.image_url}
             alt=""
