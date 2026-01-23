@@ -208,14 +208,46 @@ export function useMessages(familyId: string | null) {
 
     try {
       if (existingReaction) {
+        // 楽観的更新: 即座にUIから削除
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id !== messageId) return msg
+            return {
+              ...msg,
+              reactions: (msg.reactions || []).filter(
+                (r) => !(r.member_id === memberId && r.emoji === emoji)
+              ),
+            }
+          })
+        )
         await removeReactionApi(messageId, memberId, emoji)
       } else {
+        // 楽観的更新: 即座にUIに追加
+        const newReaction = {
+          id: `temp-${Date.now()}`,
+          message_id: messageId,
+          member_id: memberId,
+          emoji,
+          created_at: new Date().toISOString(),
+          member: membersRef.current[memberId],
+        }
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id !== messageId) return msg
+            return {
+              ...msg,
+              reactions: [...(msg.reactions || []), newReaction],
+            }
+          })
+        )
         await addReactionApi(messageId, memberId, emoji)
       }
     } catch {
       console.error('リアクション更新に失敗')
+      // エラー時は再読み込み
+      loadMessages(false)
     }
-  }, [messages])
+  }, [messages, loadMessages])
 
   return {
     messages,
